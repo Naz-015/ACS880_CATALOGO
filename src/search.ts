@@ -36,6 +36,7 @@ function normalizeDrive(row: Record<string, unknown>): DriveSummary {
     voltaje_nominal: (row.voltaje_nominal as string | null) ?? null,
     corriente_nominal: toNumber(row.corriente_nominal),
     corriente_max: toNumber(row.corriente_max),
+    corriente_i1_a: toNumber(row.corriente_i1_a),
     corriente_normal_duty_a: toNumber(row.corriente_normal_duty_a) ?? toNumber(row.corriente_nominal),
     corriente_heavy_duty_a: toNumber(row.corriente_heavy_duty_a) ?? toNumber(row.corriente_max),
     corriente_light_duty_a: toNumber(row.corriente_light_duty_a),
@@ -51,7 +52,8 @@ function normalizeDrive(row: Record<string, unknown>): DriveSummary {
     version_catalogo: (row.version_catalogo as string | null) ?? null,
     manual_origen: (row.manual_origen as string | null) ?? null,
     estado: (row.estado as string | null) ?? null,
-    frame_configuracion: (row.frame_configuracion as string | null) ?? null
+    configuracion_frames: (row.configuracion_frames as string | null) ?? (row.frame_configuracion as string | null) ?? null,
+    frame_configuracion: (row.frame_configuracion as string | null) ?? (row.configuracion_frames as string | null) ?? null
   };
 }
 
@@ -122,46 +124,52 @@ export async function searchByModel(input: string): Promise<SearchResult> {
   );
 }
 
-export async function searchByCurrent(amps: number, duty: DutyMode): Promise<SearchResult> {
-  const viewColumnByDuty: Record<DutyMode, string> = {
-    normal: 'corriente_busqueda_normal_a',
-    heavy: 'corriente_busqueda_heavy_a',
-    light: 'corriente_light_duty_a'
+export async function searchByCurrent(
+  amps: number,
+  duty: DutyMode,
+  voltage: string
+): Promise<SearchResult> {
+  const columnByDuty: Record<DutyMode, string> = {
+    normal: 'corriente_nominal',        // I_N
+    heavy: 'corriente_heavy_duty_a',    // I_Hd
+    light: 'corriente_light_duty_a'     // I_ld
   };
 
-  const tableColumnByDuty: Record<DutyMode, string> = {
-    normal: 'corriente_nominal',
-    heavy: 'corriente_max',
-    light: 'corriente_light_duty_a'
-  };
-
-  const viewColumn = viewColumnByDuty[duty];
-  const tableColumn = tableColumnByDuty[duty];
+  const column = columnByDuty[duty];
 
   return queryViewOrTable(
     async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from(DRIVE_VIEW)
         .select('*')
-        .gte(viewColumn, amps)
-        .lte(viewColumn, amps * 1.5)
-        .order(viewColumn, { ascending: true })
+        .gte(column, amps)
+        .order(column, { ascending: true })
         .limit(100);
+
+      if (voltage) {
+        query = query.eq('voltaje_nominal', voltage);
+      }
+
+      const { data, error } = await query;
       return { data, error };
     },
     async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from(DRIVE_TABLE)
         .select('*')
-        .gte(tableColumn, amps)
-        .lte(tableColumn, amps * 1.5)
-        .order(tableColumn, { ascending: true })
+        .gte(column, amps)
+        .order(column, { ascending: true })
         .limit(100);
+
+      if (voltage) {
+        query = query.eq('voltaje_nominal', voltage);
+      }
+
+      const { data, error } = await query;
       return { data, error };
     }
   );
 }
-
 export async function searchByPower(value: number, unit: PowerUnit): Promise<SearchResult> {
   const viewColumnByUnit: Record<PowerUnit, string> = {
     kw: 'potencia_busqueda_kw',

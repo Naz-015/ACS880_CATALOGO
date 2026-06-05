@@ -89,12 +89,13 @@ form.addEventListener('submit', async (event) => {
     } else if (activeMode === 'current') {
       const amps = Number(getInputValue('current-input'));
       const duty = getInputValue('duty-select') as DutyMode;
+      const voltage = getInputValue('voltage-select');
       if (!Number.isFinite(amps) || amps <= 0) {
         setMessage('Ingrese una corriente válida en amperios.', 'warning');
         clearResults();
         return;
       }
-      result = await searchByCurrent(amps, duty);
+      result = await searchByCurrent(amps, duty, voltage);
     } else {
       const power = Number(getInputValue('power-input'));
       const unit = getInputValue('unit-select') as PowerUnit;
@@ -145,9 +146,17 @@ function renderFields(): void {
         <label class="field">
           <span>Duty</span>
           <select id="duty-select">
-            <option value="normal">Normal Duty</option>
-            <option value="heavy">Heavy Duty</option>
-            <option value="light">Light Duty</option>
+            <option value="normal">Normal data / I_N</option>
+            <option value="light">Light-overload / I_ld</option>
+            <option value="heavy">Heavy duty / I_Hd</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Voltaje nominal</span>
+          <select id="voltage-select">
+            <option value="400V">400V</option>
+            <option value="500V">500V</option>
+            <option value="690V">690V</option>
           </select>
         </label>
       </div>
@@ -222,7 +231,7 @@ function renderResults(rows: DriveSummary[]): void {
                 <td>${value(row.corriente_nominal)}</td>
                 <td>${value(row.corriente_max)}</td>
                 <td>${value(row.potencia_nominal_kw)}</td>
-                <td>${value(row.frame_configuracion)}</td>
+                <td>${value(row.configuracion_frames ?? row.frame_configuracion)}</td>
               </tr>
             `
           )
@@ -260,6 +269,7 @@ async function renderDetail(row: DriveSummary): Promise<void> {
 
 function buildDetailHtml(detail: DriveDetail): string {
   const drive = detail.drive;
+  const frameConfig = drive.configuracion_frames ?? drive.frame_configuracion;
 
   return `
     <div class="detail-header">
@@ -270,24 +280,45 @@ function buildDetailHtml(detail: DriveDetail): string {
       <span class="abb-badge">ABB ACS880</span>
     </div>
 
-    <div class="detail-grid">
-      ${metric('Modelo', drive.modelo)}
-      ${metric('Voltaje nominal', drive.voltaje_nominal)}
-      ${metric('Corriente nominal [A]', drive.corriente_nominal)}
-      ${metric('Corriente máxima [A]', drive.corriente_max)}
-      ${metric('Normal Duty [A]', drive.corriente_normal_duty_a)}
-      ${metric('Heavy Duty [A]', drive.corriente_heavy_duty_a)}
-      ${metric('Light Duty [A]', drive.corriente_light_duty_a)}
-      ${metric('Potencia nominal [kW]', drive.potencia_nominal_kw)}
-      ${metric('Potencia Heavy Duty [kW]', drive.potencia_heavy_duty_kw)}
-      ${metric('Potencia [HP]', drive.potencia_nominal_hp)}
-      ${metric('Potencia [kVA]', drive.potencia_nominal_kva)}
-      ${metric('P_loss [kW]', drive.p_loss_kw)}
-      ${metric('Airflow [m³/h]', drive.airflow_m3h)}
-      ${metric('Noise [dB]', drive.noise_db)}
-      ${metric('Configuración frames', drive.frame_configuracion)}
-      ${metric('Versión catálogo', drive.version_catalogo)}
-    </div>
+    <section class="subsection">
+      <h4>Normal data</h4>
+      <div class="detail-grid">
+        ${metric('Modelo', drive.modelo)}
+        ${metric('Voltaje nominal', drive.voltaje_nominal)}
+        ${metric('I_N [A]', drive.corriente_nominal)}
+        ${metric('Imax [A]', drive.corriente_max)}
+        ${metric('I_1 [A]', drive.corriente_i1_a)}
+        ${metric('P_N [kW]', drive.potencia_nominal_kw)}
+        ${metric('S_N [kVA]', drive.potencia_nominal_kva)}
+      </div>
+    </section>
+
+    <section class="subsection">
+      <h4>Light-overload use</h4>
+      <div class="detail-grid">
+        ${metric('I_ld [A]', drive.corriente_light_duty_a)}
+        ${metric('P_ld [kW]', drive.potencia_light_duty_kw)}
+      </div>
+    </section>
+
+    <section class="subsection">
+      <h4>Heavy duty use</h4>
+      <div class="detail-grid">
+        ${metric('I_Hd [A]', drive.corriente_heavy_duty_a)}
+        ${metric('P_Hd [kW]', drive.potencia_heavy_duty_kw)}
+      </div>
+    </section>
+
+    <section class="subsection">
+      <h4>Additional technical data</h4>
+      <div class="detail-grid">
+        ${metric('P_loss [kW]', drive.p_loss_kw)}
+        ${metric('Airflow [m³/h]', drive.airflow_m3h)}
+        ${metric('Noise [dB]', drive.noise_db)}
+        ${metric('Configuración frames', frameConfig)}
+        ${metric('Versión catálogo', drive.version_catalogo)}
+      </div>
+    </section>
 
     ${sectionTable(
       'Detalle de frames',

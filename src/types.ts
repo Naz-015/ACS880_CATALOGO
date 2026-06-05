@@ -6,23 +6,39 @@ export interface DriveSummary {
   referencia_interna: string;
   modelo: string;
   voltaje_nominal: string | null;
-  corriente_nominal: number | null;
-  corriente_max: number | null;
+
+  // Normal data
+  corriente_nominal: number | null;      // I_N
+  corriente_max: number | null;          // Imax
+  corriente_i1_a?: number | null;        // I_1
+  potencia_nominal_kw: number | null;    // P_N
+  potencia_nominal_kva?: number | null;  // S_N
+
+  // Light-overload use
+  corriente_light_duty_a?: number | null; // I_ld
+  potencia_light_duty_kw?: number | null; // P_ld
+
+  // Heavy duty use
+  corriente_heavy_duty_a?: number | null; // I_Hd
+  potencia_heavy_duty_kw: number | null;  // P_Hd
+
+  // Campos auxiliares / compatibilidad
   corriente_normal_duty_a?: number | null;
-  corriente_heavy_duty_a?: number | null;
-  corriente_light_duty_a?: number | null;
-  potencia_nominal_kw: number | null;
-  potencia_heavy_duty_kw: number | null;
   potencia_normal_duty_kw?: number | null;
-  potencia_light_duty_kw?: number | null;
   potencia_nominal_hp?: number | null;
-  potencia_nominal_kva?: number | null;
+
+  // Datos adicionales
   p_loss_kw?: number | null;
   airflow_m3h?: number | null;
   noise_db?: number | null;
   version_catalogo?: string | null;
   manual_origen?: string | null;
   estado?: string | null;
+
+  // La vista nueva usa este nombre
+  configuracion_frames?: string | null;
+
+  // Lo dejamos por compatibilidad con código anterior
   frame_configuracion?: string | null;
 }
 
