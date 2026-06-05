@@ -99,12 +99,13 @@ form.addEventListener('submit', async (event) => {
     } else {
       const power = Number(getInputValue('power-input'));
       const unit = getInputValue('unit-select') as PowerUnit;
+      const voltage = getInputValue('power-voltage-select');
       if (!Number.isFinite(power) || power <= 0) {
         setMessage('Ingrese una potencia válida.', 'warning');
         clearResults();
         return;
       }
-      result = await searchByPower(power, unit);
+      result = await searchByPower(power, unit, voltage);
     }
 
     currentResults = result.rows;
@@ -154,9 +155,9 @@ function renderFields(): void {
         <label class="field">
           <span>Voltaje nominal</span>
           <select id="voltage-select">
-            <option value="400V">400V</option>
-            <option value="500V">500V</option>
-            <option value="690V">690V</option>
+            <option value="400V">400V (Range 380…415V)</option>
+            <option value="500V">500V (Range 380…500V)</option>
+            <option value="690V">690V (Range 525…690V)</option>
           </select>
         </label>
       </div>
@@ -176,6 +177,14 @@ function renderFields(): void {
           <option value="kw">kW</option>
           <option value="hp">HP</option>
           <option value="kva">kVA</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Voltaje nominal</span>
+        <select id="power-voltage-select">
+          <option value="400V">400V (Range 380…415V)</option>
+          <option value="500V">500V (Range 380…500V)</option>
+          <option value="690V">690V (Range 525…690V)</option>
         </select>
       </label>
     </div>

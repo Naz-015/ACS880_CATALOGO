@@ -170,41 +170,48 @@ export async function searchByCurrent(
     }
   );
 }
-export async function searchByPower(value: number, unit: PowerUnit): Promise<SearchResult> {
-  const viewColumnByUnit: Record<PowerUnit, string> = {
-    kw: 'potencia_busqueda_kw',
-    hp: 'potencia_nominal_hp',
-    kva: 'potencia_nominal_kva'
-  };
-
-  const tableColumnByUnit: Record<PowerUnit, string> = {
+export async function searchByPower(
+  value: number,
+  unit: PowerUnit,
+  voltage: string
+): Promise<SearchResult> {
+  const columnByUnit: Record<PowerUnit, string> = {
     kw: 'potencia_nominal_kw',
     hp: 'potencia_nominal_hp',
     kva: 'potencia_nominal_kva'
   };
 
-  const viewColumn = viewColumnByUnit[unit];
-  const tableColumn = tableColumnByUnit[unit];
+  const column = columnByUnit[unit];
 
   return queryViewOrTable(
     async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from(DRIVE_VIEW)
         .select('*')
-        .gte(viewColumn, value)
-        .lte(viewColumn, value * 1.5)
-        .order(viewColumn, { ascending: true })
+        .gte(column, value)
+        .order(column, { ascending: true })
         .limit(100);
+
+      if (voltage) {
+        query = query.eq('voltaje_nominal', voltage);
+      }
+
+      const { data, error } = await query;
       return { data, error };
     },
     async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from(DRIVE_TABLE)
         .select('*')
-        .gte(tableColumn, value)
-        .lte(tableColumn, value * 1.5)
-        .order(tableColumn, { ascending: true })
+        .gte(column, value)
+        .order(column, { ascending: true })
         .limit(100);
+
+      if (voltage) {
+        query = query.eq('voltaje_nominal', voltage);
+      }
+
+      const { data, error } = await query;
       return { data, error };
     }
   );
