@@ -86,7 +86,7 @@ ${v}`}class O extends Error{constructor({message:e,code:r,cause:s,name:n}){var i
       <h1>ABB Drive Catalog</h1>
     </div>
     <div class="topbar-actions">
-      <img class="company-logo" src="/logo-tcontrol.png" alt="Tcontrol s.a." />
+      <img class="company-logo" src="./logo-tcontrol.png" alt="Tcontrol s.a." />
       <div class="status-pill">Supabase</div>
     </div>
   </header>
